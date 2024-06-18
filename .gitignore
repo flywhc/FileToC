@@ -25,6 +25,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.ArduinoOutput
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -129,6 +130,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.conda
+.vscode
 
 # Spyder project settings
 .spyderproject
