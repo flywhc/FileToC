@@ -74,8 +74,13 @@ typedef struct ProgmemFileInformationStruct
 * `file_length`: The file length.
 * `content_type`: The content type can be used by web server to serve the file.
 
+In the generated sample 'webdata.c' below, `css_style_css` is the PROGMEM C string of `style.css`:
+```
+    { .file_path = "/css/style.css", .file_content = css_style_css, .file_length = 284, .content_type = "text/css" },
+```
+The script removed the root directory 'webdata' from the file path and added `/` to the beginning of the file path for the web server to serve the file. .
 
-4. Use the generated C file in Web Server
+1. Use the generated C file in Web Server
 Create an object of `ProgmemWebRequest` and pass the `progmemFiles` to the constructor.
 ```
 const char *ignoredDirectories[] = {"/api", "/cgi-bin"};

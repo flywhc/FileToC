@@ -75,6 +75,12 @@ typedef struct ProgmemFileInformationStruct
 * `file_length`: 文件长度。
 * `content_type`: 用于web服务器的文件MIME类型。
 
+在生成的范例'webdata.c'中, `css_style_css` 是PROGMEM C字符串格式的 `style.css`文件：
+```
+    { .file_path = "/css/style.css", .file_content = css_style_css, .file_length = 284, .content_type = "text/css" },
+```
+脚本将`webdata`目录的路径从文件路径中删除，并将`/`添加到文件路径的开头，以便Web服务器能够以相对路径返回文件。
+
 
 ### 在Web服务器中使用生成的C文件
 创建一个`ProgmemWebRequest`对象并在构造中使用`progmemFiles`作为输入.
