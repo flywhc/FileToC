@@ -16,9 +16,10 @@ Flash中程序代码的容量大小，可在Arduino的构建日志中查询到�
 
 ## 特性
 * 保留文件名和文件路径，以便Web服务器能够以相对路径返回文件。
-* 压缩HTML、CSS和JavaScript文件以减小体积。
-* 提供Web服务器请求处理器以支持生成的PROGMEM文件。
-  
+* 最小化HTML、CSS和JavaScript文件以减小体积。
+* GZIP压缩HTML, CSS和Javascript文件.
+* 提供Web服务器请求处理器以支持生成的PROGMEM文件以及GZIP压缩。
+*   
 ## 支持平台
 * Arduino ESP8266。已在ESP-01S上测试。
 
@@ -43,14 +44,16 @@ conda activate c:\projects\FileToCString\.conda
 ```
 file_to_c.py <directory> [-r] [-c]
     directory: 包含资源文件的目录
-    -r: 包含子目录里的文件
-    -c：压缩HTML, JS和CSS文件.
+    -o: 原始文件。默认脚本会缩小并压缩所有HTML, JS和CSS文件。指定-o则跳过缩小和压缩。
 ```
 例如
 ```
 cd samples\esp8266
-python ..\..\file_to_c.py webdata -r -c
+python ..\..\file_to_c.py webdata
 ```
+
+注意：必须在你的网页目录上一级执行这个脚本，否则生成的相对路径将不正确。
+
 
 ### 了解输出的文件
 脚本会在执行命令的同一目录下生成`<directory>.h`以及`<directory>.c`文件。HTML、CSS 和 JavaScript 文件在作为字符串存储之前会进行压缩，而其他文件则以二进制格式存储。这些输出可以直接包含在项目的代码库中。
@@ -64,9 +67,10 @@ extern const ProgmemFileInformation progmemFiles[];
 typedef struct ProgmemFileInformationStruct
 {
     const char * file_path;
-    const char * file_content; // PROGMEM
+    const char * file_content;
     const int file_length;
     const char * content_type;
+    const int is_compressed;
 } ProgmemFileInformation;
 ```
 
@@ -74,12 +78,20 @@ typedef struct ProgmemFileInformationStruct
 * `file_content`: PROGMEM C字符串格式的文件内容。
 * `file_length`: 文件长度。
 * `content_type`: 用于web服务器的文件MIME类型。
-
-在生成的范例'webdata.c'中, `css_style_css` 是PROGMEM C字符串格式的 `style.css`文件：
-```
-    { .file_path = "/css/style.css", .file_content = css_style_css, .file_length = 284, .content_type = "text/css" },
-```
+* `is_compressed`: 文件是否是gzip压缩的。
+  
+在下面生成的范例'webdata.c'中, `css_style_css` 是PROGMEM C字符串格式的 `/css/style.css`文件，因为使用GZIP压缩因此是二进制数组格式。
 脚本将`webdata`目录的路径从文件路径中删除，并将`/`添加到文件路径的开头，以便Web服务器能够以相对路径返回文件。
+```
+const char v_css_style_css[] PROGMEM = 
+{ 0x1f, 0x8b, 0x08, 0x00, 0x02, 0x08, 0x74, 0x66, 0x02, 0xff, 0x6d, 0x8e, ...}
+const char text_css[] PROGMEM = "text/css";
+const char css_style_css[] PROGMEM = "/css/style.css";
+const ProgmemFileInformation progmemFiles[] = {
+    { .file_path = css_style_css, .file_content = v_css_style_css, .file_length = 209, .content_type = text_css, .is_compressed = 1 },
+...
+}
+```
 
 
 ### 在Web服务器中使用生成的C文件
@@ -103,6 +115,10 @@ webserver.on("/api/toggle_led", toggleLed); // 演示如何开关板上LED灯的
 如果一切顺利，您可以通过访问 http://espserver 来打开web服务器，并通过点击绿色按钮来控制板上内置的LED灯。
 
 ![screenshot](images/demo.png)
+
+## 版本历史
+* 1.1: Support GZIP compression. Paths and Content Types are also stored in PROGMEM.
+* 1.0: Initial release
 
 ## License
 此脚本使用MIT许可证。

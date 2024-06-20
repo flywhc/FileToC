@@ -18,7 +18,8 @@ The capacity of the Code in flash can be found in the Arduino build log. For exa
 ## Features
 * Preserve the file name and file path so that the web server can serve the files with relative path.
 * Minify HTML, CSS and Javascript files to reduce the size.
-* A web server request handler to support generated PROGMEM files.
+* GZIP Compression for HTML, CSS and Javascript files.
+* A web server request handler to support generated PROGMEM contents and GZIP compression.
 
 ## Supported Platforms
 Arduino ESP8266. Tested on ESP-01S.
@@ -26,7 +27,7 @@ Arduino ESP8266. Tested on ESP-01S.
 Others may work with minor modifications.
 
 ## Usage
-1. Prepare python environment
+### Prepare python environment
 import Conda environment.yml for python environment.
 
 For example:
@@ -37,21 +38,22 @@ conda activate c:\projects\FileToCString\.conda
 
 Remember to replace `c:\projects\FileToCString` with your specific project path.
 
-2. Run the script to convert files into C file
+### Run the script to convert files into C file
  Under your project folder, execute the following command to convert files into C source code:
 ```
 file_to_c.py <directory> [-r] [-c]
     directory: The directory contains the files to be converted.
-    -r: Recursively traverse subdirectories.
-    -c：Compress/minify HTML, JS and CSS files.
+    -o: Original file. The script will minify and gzip compress all HTML, JS and CSS files by default. Specify -o to skip minify and gzip compression.
 ```
 For example:
 ```
 cd samples\esp8266
-python ..\..\file_to_c.py webdata -r -c
+python ..\..\file_to_c.py webdata
 ```
 
-3. Understand output files.
+Note: This script must be executed one level above your web page directory. Otherwise, the generated relative paths will be incorrect.
+
+### Understand output files.
 The script generates `<directory>.h` and `<directory>.c` files in the same location as the executed command. HTML, CSS, and JavaScript files undergo compression before being stored as strings, whereas other files are stored in binary format. These outputs can be directly included in your project's codebase.
 
 All files are stored in an array of `ProgmemFileInformation` structure:
@@ -63,9 +65,10 @@ ProgmemFileInformation is defined in ProgmemFileInformation.h
 typedef struct ProgmemFileInformationStruct
 {
     const char * file_path;
-    const char * file_content; // PROGMEM
+    const char * file_content;
     const int file_length;
     const char * content_type;
+    const int is_compressed;
 } ProgmemFileInformation;
 ```
 
@@ -73,14 +76,23 @@ typedef struct ProgmemFileInformationStruct
 * `file_content`: The file content in PROGMEM C string.
 * `file_length`: The file length.
 * `content_type`: The content type can be used by web server to serve the file.
+* `is_compressed`: The file is gzip compressed or not.
 
-In the generated sample 'webdata.c' below, `css_style_css` is the PROGMEM C string of `style.css`:
+In the generated sample 'webdata.c' below, `css_style_css` is the PROGMEM C string of `/css/style.css`. The file is gzip compressed and stored in C byte array.
+The script removed the root directory 'webdata' from the file path and added `/` to the beginning of the file path for the web server to serve the file.
 ```
-    { .file_path = "/css/style.css", .file_content = css_style_css, .file_length = 284, .content_type = "text/css" },
+const char v_css_style_css[] PROGMEM = 
+{ 0x1f, 0x8b, 0x08, 0x00, 0x02, 0x08, 0x74, 0x66, 0x02, 0xff, 0x6d, 0x8e, ...}
+const char text_css[] PROGMEM = "text/css";
+const char css_style_css[] PROGMEM = "/css/style.css";
+const ProgmemFileInformation progmemFiles[] = {
+    { .file_path = css_style_css, .file_content = v_css_style_css, .file_length = 209, .content_type = text_css, .is_compressed = 1 },
+...
+}
 ```
-The script removed the root directory 'webdata' from the file path and added `/` to the beginning of the file path for the web server to serve the file. .
 
-1. Use the generated C file in Web Server
+
+### Use the generated C file in Web Server
 Create an object of `ProgmemWebRequest` and pass the `progmemFiles` to the constructor.
 ```
 const char *ignoredDirectories[] = {"/api", "/cgi-bin"};
@@ -95,11 +107,16 @@ webserver.on("/api/toggle_led", toggleLed); // demo of a simple API to toggle bu
 
 Note: The default root request handler will serve the `index.htm` file in the `<directory>` folder.
 
-5. Build and upload to your device
+
+### Build and upload to your device
 please remember to update `WIFI_SSID` and `WIFI_PASSWORD` in the config.h before compiling.
 
 If everything works, you can open the web server at http://espserver and control the built-in LED by clicking the green button.
 ![screenshot](images/demo.png)
+
+## Version History
+* 1.1: Support GZIP compression. Paths and Content Types are also stored in PROGMEM.
+* 1.0: Initial release
 
 ## License
 The python script is under MIT license.

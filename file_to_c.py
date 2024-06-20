@@ -3,6 +3,7 @@
 """
 @File    : file_to_c.py
 @Author  : Jason Wang (https://github.com/flywhc)
+@Version : 1.1
 @License : MIT. Note: the generated files may have to be GPL license if you use it in an Arduino GPL project.
 @Desc    : convert file contents to C language string and generate corresponding header file
 @Usage   : file_to_c.py <directory> [-r]
@@ -19,6 +20,7 @@ import mimetypes
 import rjsmin
 import minify_html
 import lightningcss
+import gzip
 
 MAX_LINE_LENGTH = 120
 
@@ -50,7 +52,7 @@ def split_c_string(s, max_length=MAX_LINE_LENGTH, is_text_file=True):
         # add quotes and join with commas
         return '\n'.join(f'"{line}"' for line in lines)
     else:
-        # process nonon-text file content
+        # process non-text file content
         lines = []
         current_line = ''
         for part in s.split(','):
@@ -76,26 +78,45 @@ def file_contents_to_c_string(file_path, compress):
         if ext in ['.htm', '.html', '.js', '.css']:
             content = file.read().decode('utf-8')
             if compress:
-                # compress html
+                # minify html/js/css
                 if ext in ['.htm', '.html']:
                     content = minify_html.minify(content, minify_js=True, minify_css=True, remove_processing_instructions=True)
                 elif ext == '.js':
                     content = rjsmin.jsmin(content)
                 elif ext == '.css':
                     content = lightningcss.process_stylesheet(content)
-            
-            content_length = len(content)
+                # compress html/js/css using gzip
+                byte_content = content.encode('utf-8')
+                compressed_data = gzip.compress(byte_content)
+                return binary_to_c_string(compressed_data) + (True,)
+            # return original content without compression
             # replace special characters for C string
             content = content.replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
-            return split_c_string(f'{content}'), content_length
+            return split_c_string(f'{content}'), len(content) + (False,)
         else:
-            hex_data = binascii.hexlify(file.read()).decode('ascii')
-            byte_array = ', '.join(['0x' + hex_data[i:i+2] for i in range(0, len(hex_data), 2)])
-            byte_array = split_c_string(byte_array, is_text_file = False)
-            file_length = os.path.getsize(file_path)
-            return f"{{\n{byte_array}\n}}", file_length
+            return binary_to_c_string(file.read()) + (False,)
+            
 
-def generate_c_and_dict(directory, recursive=False, compress = False):
+def binary_to_c_string(binary_data):
+    """Convert binary data to C language string
+    :param binary_data: the binary data to be converted
+    :return: the C language string
+    """
+    byte_array = '0x' + binascii.hexlify(binary_data, ',').decode('ascii').replace(',', ', 0x')
+    byte_array = split_c_string(byte_array, is_text_file=False)
+    return f"{{\n{byte_array}\n}}", len(binary_data)
+
+def replace_non_letter_digit(s):
+    """
+    replace all non-letter and digit characters to '_'
+    
+    :param s: input string
+    
+    :return: replaced string
+    """
+    return re.sub(r'[^a-zA-Z0-9_]', '_', s)
+
+def generate_c_and_dict(directory, recursive, compress):
     """
     Generate C source file, header file and path-string dictionary considering file types
     :param directory: the directory to be processed
@@ -108,32 +129,55 @@ def generate_c_and_dict(directory, recursive=False, compress = False):
     c_content = f'#include "{header_name.lower()}.h" \n\n'
     file_index = "const ProgmemFileInformation progmemFiles[] = {\n"
     file_count = 0;
+    content_type_list = []
+    path_list = []
 
     # recursive function to process directory and read files
     def process_dir(dir_path, root_length):
-        nonlocal c_content, file_index, file_count, compress
+        nonlocal c_content, file_index, file_count, compress, content_type_list, path_list
         for item_name in os.listdir(dir_path):
             item_path = os.path.join(dir_path, item_name)
             if os.path.isdir(item_path) and recursive:
                 process_dir(os.path.join(dir_path, item_name), root_length)
             elif not item_name.startswith('.') and os.path.isfile(item_path):
-                c_string, file_length = file_contents_to_c_string(item_path, compress)
+                c_string, file_length, is_compressed = file_contents_to_c_string(item_path, compress)
                 item_path = item_path[root_length:]
-                c_var_name = re.sub(r'\W|^(?=\d)', '_', item_path).lower()
+                c_var_name = 'v_' + re.sub(r'\W|^(?=\d)', '_', item_path).lower()
                 c_content += f"const char {c_var_name}[] PROGMEM = \n{c_string};\n\n"
+                
+                # generate file_path
                 path_key = item_path
                 if os.sep == '\\':  # escape \\ for Windows
                     path_key = item_path.replace('\\', '/')
+                path_list.append(path_key)
+                    
+                # generate content_type
                 c_content_type = mimetypes.guess_type(item_path)[0]
                 if c_content_type is None:
                     c_content_type = "application/octet-stream"
-                file_index += f"    {{ .file_path = \"/{path_key}\", .file_content = {c_var_name}, .file_length = {file_length}, .content_type = \"{c_content_type}\" }},\n"
-                file_count +=1
+                if c_content_type not in content_type_list:  # add content type to list if not exists
+                    content_type_list.append(c_content_type)
+                content_type_key = replace_non_letter_digit(c_content_type)
+                
+                file_index += f"    {{ .file_path = {replace_non_letter_digit(path_key)}, .file_content = {c_var_name}, \
+.file_length = {file_length}, .content_type = {content_type_key}, .is_compressed = {1 if is_compressed else 0} }},\n"
+                file_count += 1
 
     process_dir(directory, len(directory) + 1)
 
-    # remove the last comma for the last member of struct array
-    c_content += f"""{file_index}    {{ .file_path = 0, .file_content = 0, .file_length = 0, .content_type = 0 }},
+    c_content += "// content types\n"
+    # output list of content types
+    for content_type in content_type_list:
+        c_content += f"const char {replace_non_letter_digit(content_type)}[] PROGMEM = \"{content_type}\";\n"
+
+    c_content += "\n// list of file paths\n"
+    # output list of file paths
+    for file_path in path_list:
+        c_content += f"const char {replace_non_letter_digit(file_path)}[] PROGMEM = \"/{file_path}\";\n"
+    
+    c_content += "\n// file index\n"
+    # output file index. Remove the last comma for the last member of struct array
+    c_content += f"""{file_index}    {{ .file_path = 0, .file_content = 0, .file_length = 0, .content_type = 0, .is_compressed = 0 }},
 }};
 """;
     h_content = f"""#pragma once
@@ -151,16 +195,21 @@ extern const ProgmemFileInformation progmemFiles[];
 
     with open(f"{directory}.h", "w", encoding='utf-8') as h_file:
         h_file.write(h_content)
+        
+    return file_count
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert file and directory paths to C strings or binary arrays with a lookup dictionary.")
+    parser = argparse.ArgumentParser(description="Convert files to C PROGMEM strings.")
     parser.add_argument("directory", help="The directory contains the files to be converted.")
-    parser.add_argument("-r", "--recursive", action="store_true", help="Recursively traverse subdirectories.")
-    parser.add_argument("-c", "--compress", action="store_true", help="Compress HTML, JS and CSS files.")
+#    parser.add_argument("-r", "--recursive", action="store_true", help="Recursively traverse subdirectories.")
+    parser.add_argument("-o", "--original", action="store_true", help="Do not compress nor minify HTML, JS and CSS files by using gzip.")
     args = parser.parse_args()
 
-    path_dict = generate_c_and_dict(args.directory, args.recursive, args.compress)
-    print(f"Conversion completed.")
+    if args.directory.startswith('.'):
+        print("Error: The directory cannot start with '.'.")
+        exit(1)
+    file_count = generate_c_and_dict(args.directory, True, not args.original)
+    print(f"Conversion completed. {file_count} files converted.")
 
 if __name__ == "__main__":
     main()

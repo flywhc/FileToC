@@ -39,8 +39,14 @@ bool ProgmemWebRequest::handle(ESP8266WebServer & server, HTTPMethod requestMeth
   
   int i = 0;
   while (files[i].file_path !=0 ) {
-    if (uri.equals(files[i].file_path)) {
-      server.send_P(200, files[i].content_type, files[i].file_content, files[i].file_length);
+    if (strcmp_P(uri.c_str(), files[i].file_path) == 0) {
+      if(files[i].is_compressed) {
+        server.sendHeader("Content-Encoding", "gzip");
+        server.send_P(200, files[i].content_type, files[i].file_content, files[i].file_length);
+      }
+      else {
+        server.send_P(200, files[i].content_type, files[i].file_content, files[i].file_length);
+      }
       return true;
     }
     i++;

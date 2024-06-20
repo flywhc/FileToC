@@ -71,9 +71,18 @@ void initWiFi(){
     setLEDLight(false);
     delay(500);
     setLEDLight(true);
-    sprintf(buf, "%d,", wifiStatus);
-    DebugPrint(buf);
-    if((count++ % 80) == 0) DebugPrintln("");
+    switch(wifiStatus) {
+      case WL_NO_SSID_AVAIL:
+        DebugPrintln("No WIFI SSID available");
+        break;
+      case WL_WRONG_PASSWORD:
+        DebugPrintln("Wrong WIFI password");
+        break;
+      default:
+        sprintf(buf, "%d,", wifiStatus);
+        DebugPrint(buf);
+        if((count++ % 80) == 0) DebugPrintln("");
+    }
   }
 
   DebugPrintln("");

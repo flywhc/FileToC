@@ -16,9 +16,10 @@
 typedef struct ProgmemFileInformationStruct
 {
     const char * file_path;
-    const char * file_content; // PROGMEM
+    const char * file_content;
     const int file_length;
     const char * content_type;
+    const int is_compressed;
 } ProgmemFileInformation;
 
 
