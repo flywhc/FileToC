@@ -19,9 +19,10 @@ Flash中程序代码的容量大小，可在Arduino的构建日志中查询到�
 * 最小化HTML、CSS和JavaScript文件以减小体积。
 * GZIP压缩HTML, CSS和Javascript文件.
 * 提供Web服务器请求处理器以支持生成的PROGMEM文件以及GZIP压缩。
-*   
+* 提供两个Web服务器示例：ESPAsyncWebServer (支持ESP32和ESP8266) 和ESP8266WiFi (支持ESP8266)
+
 ## 支持平台
-* Arduino ESP8266。已在ESP-01S上测试。
+* Arduino ESP8266和ESP32。已在ESP-01S上测试。
 
 * 其他平台可能稍作修改后也可运行。
 
@@ -48,10 +49,15 @@ file_to_c.py <directory> [-r] [-c]
 ```
 例如
 ```
-cd samples\esp8266
+cd examples\esp8266
 python ..\..\file_to_c.py webdata
 ```
 
+或
+```
+cd examples\ESPAsyncWebServer
+python ..\..\file_to_c.py webdata
+```
 注意：必须在你的网页目录上一级执行这个脚本，否则生成的相对路径将不正确。
 
 
@@ -95,28 +101,27 @@ const ProgmemFileInformation progmemFiles[] = {
 
 
 ### 在Web服务器中使用生成的C文件
-创建一个`ProgmemWebRequest`对象并在构造中使用`progmemFiles`作为输入.
+然后你就可以从examples/ESPAsyncWebServer 或 examples/ESP8266WiFi目录下打开工程
+
+在范例工程里，它们创建了`ProgmemWebRequest`对象并在构造中使用`progmemFiles`作为输入.
 ```
 const char *ignoredDirectories[] = {"/api", "/cgi-bin"};
-webserver.addHandler(new ProgmemWebRequest(progmemFiles, ignoredDirectories));
+server.addHandler(new ProgmemAsyncWebHandler(progmemFiles, ignoredDirectories, sizeof(ignoredDirectories)/sizeof(char*)));
 ```
-可选的，你可以在`/api`或`/cgi-bin`路径下添加动态网页或者API接口。
+可选的，你可以在`/api`或`/cgi-bin`路径下添加动态网页或者API接口。可以参考例子中toggleLed()的实现方法。
 
-注意：`on()`方法应在`addHandler()`之前，否则addHandler()方法将不起作用。
-```
-webserver.on("/api/toggle_led", toggleLed); // 演示如何开关板上LED灯的API接口
-```
 
 注意：默认根请求会读取`<directory>`目录下的`index.htm`。
 
 ### 构建并上传至设备
-在编译之前，请务必在 `config.h` 文件中更新 `WIFI_SSID` 和 `WIFI_PASSWORD` 以匹配您的无线网络设置。
+在编译ino文件之前，请务必在 `config.h` 文件中更新 `WIFI_SSID` 和 `WIFI_PASSWORD` 以匹配您的无线网络设置。
 
 如果一切顺利，您可以通过访问 http://espserver 来打开web服务器，并通过点击绿色按钮来控制板上内置的LED灯。
 
 ![screenshot](images/demo.png)
 
 ## 版本历史
+* 1.2: Support ESP32 and ESPAsyncWebServer
 * 1.1: Support GZIP compression. Paths and Content Types are also stored in PROGMEM.
 * 1.0: Initial release
 

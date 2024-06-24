@@ -1,7 +1,7 @@
 /*
  This is a demo to show how to build a Web Server for ESP8266 by using ProgmemWebRequest and files in PROGMEM.
  Run following command to generate webdata.h and webdata.c from files under webdata:
-    python ..\..\file_to_c.py webdata -r -c
+    python ..\..\file_to_c.py webdata
 
  by github@flywhc
  License: GPL v2.1 or later (Same as the LICENSE in ESP8266WiFi.h)
@@ -42,7 +42,7 @@ void setup() {
 // Web server
   webserver.on("/api/toggle_led", toggleLed); // a simple web API to toggle built-in LED
   const char *ignoredDirectories[] = {"/api", "/cgi-bin"}; // dynamic web pages/APIs must be stored under /api or /cgi-bin folder
-  webserver.addHandler(new ProgmemWebRequest(progmemFiles, ignoredDirectories)); // handle requests to files in PROGMEM
+  webserver.addHandler(new ProgmemWebRequest(progmemFiles, ignoredDirectories, sizeof(ignoredDirectories)/sizeof(char*))); // handle requests to files in PROGMEM
   // do not add webserver.on() after addHandler()
 
 

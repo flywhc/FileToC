@@ -27,3 +27,7 @@ async function toggleLED() {
         console.error("Failed:", error);
     }
 }
+
+window.onload = function() {
+    toggleLED();
+};

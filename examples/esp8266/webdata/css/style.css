@@ -1,0 +1,23 @@
+h1 {
+    margin: 50px;
+    color:darkolivegreen;
+}
+
+button {
+    border-radius: 50%;
+    border-width: 1px;
+    border-style: solid;
+    padding: 0px;
+    width: 150px;
+    height: 150px;
+    background-color: #4CAF50;
+    color: white;
+    font-size:large;
+    transition: all 0.3s ease;
+}
+
+button:active {
+    background-color: #45a049;
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2); 
+}

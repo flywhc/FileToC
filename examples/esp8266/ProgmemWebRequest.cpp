@@ -11,11 +11,25 @@
 
 // Constructor for the ProgmemWebRequest class.
 // Initializes the ignoredDirectories member with the provided array of directory names.
-// 
-// @param ignoredDirectories An array of C-string pointers containing directory names to be ignored.
-ProgmemWebRequest::ProgmemWebRequest(const ProgmemFileInformation progmemFiles[], const char *ignoredDirectories[]):
-    files(progmemFiles), ignoredDirs(ignoredDirectories) {
+// @param progmemFiles: An array of ProgmemFileInformation structs containing information about the files to be served.
+// @param ignoredDirectories: An array of C-string pointers containing directory names to be ignored.
+// @param numOfIgnoredDirectories: The number of directory names in the ignoredDirectories array.
+ProgmemWebRequest::ProgmemWebRequest(const ProgmemFileInformation progmemFiles[], const char *ignoredDirectories[],size_t numOfIgnoredDirectories):
+  files(progmemFiles), numOfIgnoredDirs(numOfIgnoredDirectories) {
+  // deep copy of ignoredDirectories
+  ignoredDirs = new char*[numOfIgnoredDirs];
+  for (size_t i = 0; i < numOfIgnoredDirs; i++) {
+    ignoredDirs[i] = new char[strlen(ignoredDirectories[i]) + 1];
+    strcpy(ignoredDirs[i], ignoredDirectories[i]);
+  }
+}
 
+// Destructor for the ProgmemWebRequest class to clean up allocated memory.
+ProgmemWebRequest::~ProgmemWebRequest() {
+  for (size_t i = 0; i < numOfIgnoredDirs; i++) {
+    delete[] ignoredDirs[i];
+  }
+  delete[] ignoredDirs;
 }
 
 // Handles the web request by sending a response with a status code of 200 and a plain text message.
@@ -81,7 +95,7 @@ bool ProgmemWebRequest::canHandle(HTTPMethod requestMethod, const String& uri) {
 // @param uri The URI of the request.
 // @return True if the request URI matches an ignored directory, false otherwise.
 bool ProgmemWebRequest::isIgnoredDirectory(const String& uri) {
-  for (int i = 0; ignoredDirs[i] != NULL; i++) {
+  for (int i = 0; i < numOfIgnoredDirs; i++) {
       if (uri.startsWith(ignoredDirs[i])) {
           return true;
       }

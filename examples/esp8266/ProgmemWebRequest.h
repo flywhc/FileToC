@@ -20,7 +20,9 @@
 class ProgmemWebRequest: public RequestHandler {
 public:
     // Constructor with ignored directories (for CGI, API etc.)
-    ProgmemWebRequest(const ProgmemFileInformation progmemFiles[], const char *ignoredDirectories[]);
+    ProgmemWebRequest(const ProgmemFileInformation progmemFiles[], const char *ignoredDirectories[],size_t numOfIgnoredDirectories);
+    // Destructor
+    ~ProgmemWebRequest();
     // Handle web request. Implementation of RequestHandler
     bool handle(ESP8266WebServer & server, HTTPMethod requestMethod, const String& requestUri) override;
     // Can handle any request. Implementation of RequestHandler.
@@ -28,7 +30,8 @@ public:
 private:
     bool isIgnoredDirectory(const String& uri);
     const ProgmemFileInformation *files;
-    const char **ignoredDirs;
+    char **ignoredDirs;
+    size_t numOfIgnoredDirs;
 };
 
 #endif // _PROGMEMWEBREQUEST_H

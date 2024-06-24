@@ -1,11 +1,10 @@
 /*
- * @file ProgmemWebRequest.h
- * This file contains the header of the ProgmemWebRequest class,
- * which is designed to handle ESP8266WebServer web requests to load static files from PROGMEM
- * and ignore directories that may contain dynamic contents such as CGI, API
+ * @file ProgmemFileInformation.h
+ * This file contains the header of the ProgmemFileInformation class,
+ * which defines data structure to store static files in PROGMEM.
  * by github@flywhc
- * License: GPL v2.1 or later (Same as the LICENSE in ESP8266WebServer.h)
-*/
+ * License: GPL v2.1 or later (Same LICENSE as the one in your ESP Arduino libraries)
+ */
 
 #pragma once
 #ifndef _PROGMEMFILEINFORMATION_H

@@ -20,9 +20,10 @@ The capacity of the Code in flash can be found in the Arduino build log. For exa
 * Minify HTML, CSS and Javascript files to reduce the size.
 * GZIP Compression for HTML, CSS and Javascript files.
 * A web server request handler to support generated PROGMEM contents and GZIP compression.
+* Web Server examples by using ESPAsyncWebServer (for ESP32 and ESP8266) and ESP8266WiFi (for ESP8266 only)
 
 ## Supported Platforms
-Arduino ESP8266. Tested on ESP-01S.
+Arduino ESP8266 and ESP32. Tested on ESP-01S.
 
 Others may work with minor modifications.
 
@@ -45,11 +46,18 @@ file_to_c.py <directory> [-r] [-c]
     directory: The directory contains the files to be converted.
     -o: Original file. The script will minify and gzip compress all HTML, JS and CSS files by default. Specify -o to skip minify and gzip compression.
 ```
-For example:
+For examples:
 ```
-cd samples\esp8266
+cd examples\esp8266
 python ..\..\file_to_c.py webdata
 ```
+
+Or
+```
+cd examples\ESPAsyncWebServer
+python ..\..\file_to_c.py webdata
+```
+
 
 Note: This script must be executed one level above your web page directory. Otherwise, the generated relative paths will be incorrect.
 
@@ -78,7 +86,7 @@ typedef struct ProgmemFileInformationStruct
 * `content_type`: The content type can be used by web server to serve the file.
 * `is_compressed`: The file is gzip compressed or not.
 
-In the generated sample 'webdata.c' below, `css_style_css` is the PROGMEM C string of `/css/style.css`. The file is gzip compressed and stored in C byte array.
+In the generated example 'webdata.c' below, `css_style_css` is the PROGMEM C string of `/css/style.css`. The file is gzip compressed and stored in C byte array.
 The script removed the root directory 'webdata' from the file path and added `/` to the beginning of the file path for the web server to serve the file.
 ```
 const char v_css_style_css[] PROGMEM = 
@@ -93,28 +101,26 @@ const ProgmemFileInformation progmemFiles[] = {
 
 
 ### Use the generated C file in Web Server
-Create an object of `ProgmemWebRequest` and pass the `progmemFiles` to the constructor.
+Then you can open the web server projects from examples/ESPAsyncWebServer or examples/ESP8266WiFi folders.
+
+They created an object of `ProgmemWebRequest` and pass the `progmemFiles` to the constructor.
 ```
 const char *ignoredDirectories[] = {"/api", "/cgi-bin"};
-webserver.addHandler(new ProgmemWebRequest(progmemFiles, ignoredDirectories));
+server.addHandler(new ProgmemAsyncWebHandler(progmemFiles, ignoredDirectories, sizeof(ignoredDirectories)/sizeof(char*)));
 ```
-Optionally, you may add dynamic web pages/APIs handlers under `/api` or `/cgi-bin`. 
-
-Note: `on()` method must be added before `addHandler()` otherwise the `addHandler()` may not work:
-```
-webserver.on("/api/toggle_led", toggleLed); // demo of a simple API to toggle built-in LED
-```
+Optionally, you may add dynamic web pages/APIs handlers under `/api` or `/cgi-bin`. See toggleLed() in example code to understand how to handle dynamic web pages.
 
 Note: The default root request handler will serve the `index.htm` file in the `<directory>` folder.
 
 
 ### Build and upload to your device
-please remember to update `WIFI_SSID` and `WIFI_PASSWORD` in the config.h before compiling.
+Before buiding ino file from the example project, please remember to update `WIFI_SSID` and `WIFI_PASSWORD` in the config.h before compiling.
 
 If everything works, you can open the web server at http://espserver and control the built-in LED by clicking the green button.
 ![screenshot](images/demo.png)
 
 ## Version History
+* 1.2: Support ESP32 and ESPAsyncWebServer
 * 1.1: Support GZIP compression. Paths and Content Types are also stored in PROGMEM.
 * 1.0: Initial release
 
