@@ -13,6 +13,9 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPmDNS.h>
+// You may like change LED_BUILTIN according to your board
+// LED port is 21 on ESP32S3 Pico
+//#define LED_BUILTIN 21
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
@@ -32,6 +35,7 @@
 
 AsyncWebServer server(80);
 bool isLEDOn = false;
+char buf[100];
 
 void setup() {
   DebugBegin(SERIAL_BAUD_RATE);
@@ -91,7 +95,6 @@ void initWiFi(){
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   DebugPrintln("Connecting WIFI");
   int wifiStatus;
-  char buf[50];
   int count=1;
   while ((wifiStatus=WiFi.status()) != WL_CONNECTED) {
     delay(500);
@@ -118,7 +121,7 @@ void initWiFi(){
   #ifdef ESP8266
     sprintf(buf, "Connected to %s as %s: %s", WiFi.SSID().c_str(), WiFi.hostname().c_str(), WiFi.localIP().toString().c_str());
   #else //esp32
-    sprintf(buf, "Connected to %s as %s: %s", WiFi.SSID().c_str(), WiFi.getHostname, WiFi.localIP().toString().c_str());
+    sprintf(buf, "Connected to %s as %s: %s", WiFi.SSID().c_str(), WiFi.getHostname(), WiFi.localIP().toString().c_str());
   #endif
   DebugPrintln(buf);
 }
