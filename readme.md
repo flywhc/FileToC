@@ -23,9 +23,13 @@ The capacity of the Code in flash can be found in the Arduino build log. For exa
 * Web Server examples by using ESPAsyncWebServer (for ESP32 and ESP8266) and ESP8266WiFi (for ESP8266 only)
 
 ## Supported Platforms
-Arduino ESP8266 and ESP32. Tested on ESP-01S.
-
-Others may work with minor modifications.
+* Arduino ESP8266 and ESP32.
+* Others may work with minor modifications.
+* Tested boards:
+  * ESP-01S.
+  * ESP32 S3 Pico
+* LED_BUILTIN definition
+* Other development boards may need to modify the LED_BUILTIN definition in ESPAsyncWebServer.ino according to the onboard LED port.
 
 ## Usage
 ### Prepare python environment

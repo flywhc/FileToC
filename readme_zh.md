@@ -22,9 +22,12 @@ Flash中程序代码的容量大小，可在Arduino的构建日志中查询到�
 * 提供两个Web服务器示例：ESPAsyncWebServer (支持ESP32和ESP8266) 和ESP8266WiFi (支持ESP8266)
 
 ## 支持平台
-* Arduino ESP8266和ESP32。已在ESP-01S上测试。
-
+* Arduino ESP8266和ESP32
 * 其他平台可能稍作修改后也可运行。
+* 已在以下设备上测试：
+  * ESP-01S
+  * ESP32 S3 Pico
+* 其他开发板可能需要根据板上LED端口修改 ESPAsyncWebServer.ino里的LED_BUILTIN定义
 
 ## 使用方法
 ### 准备Python环境
