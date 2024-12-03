@@ -73,7 +73,7 @@ void ProgmemAsyncWebHandler::handleRequest(AsyncWebServerRequest *request) {
 // 
 // @param request: The AsyncWebServerRequest object representing the incoming web request.
 // @return True if the request can be handled, false otherwise.
-bool ProgmemAsyncWebHandler::canHandle(AsyncWebServerRequest *request) {
+bool ProgmemAsyncWebHandler::canHandle(AsyncWebServerRequest *request) const {
   if (request->method() != HTTP_GET || isIgnoredDirectory(request->url())) {
     return false;
   }
@@ -86,7 +86,7 @@ bool ProgmemAsyncWebHandler::canHandle(AsyncWebServerRequest *request) {
 // 
 // @param uri The URI of the request.
 // @return True if the request URI matches an ignored directory, false otherwise.
-bool ProgmemAsyncWebHandler::isIgnoredDirectory(const String& uri) {
+bool ProgmemAsyncWebHandler::isIgnoredDirectory(const String& uri) const {
   for (int i = 0; i < numOfIgnoredDirs; i++) {
       if (uri.startsWith(ignoredDirs[i])) {
           return true;

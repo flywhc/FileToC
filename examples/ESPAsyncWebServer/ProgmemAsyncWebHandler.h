@@ -24,11 +24,11 @@ public:
     // Handle web request. Implementation of AsyncWebHandler
     virtual void handleRequest(AsyncWebServerRequest *request) override final;
     // Can handle any request. Implementation of AsyncWebHandler.
-    virtual bool canHandle(AsyncWebServerRequest *request) override final;
-    virtual bool isRequestHandlerTrivial() override final {return false;}
+    virtual bool canHandle(AsyncWebServerRequest *request) const override final;
+    virtual bool isRequestHandlerTrivial() const override final {return false;}
     ~ProgmemAsyncWebHandler();
 private:
-    bool isIgnoredDirectory(const String& uri);
+    bool isIgnoredDirectory(const String& uri) const;
     const ProgmemFileInformation *files;
     char **ignoredDirs;
     size_t numOfIgnoredDirs;
